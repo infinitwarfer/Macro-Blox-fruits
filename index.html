@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>InfinityxWare</title>
+<link rel="icon" type="image/png" href="/assets/icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-void:#050202;
+    --bg-panel:#0d0505;
+    --bg-panel-2:#150707;
+    --line:#3a0c0c;
+    --red-core:#ff1a2b;
+    --red-deep:#8f0f18;
+    --red-dim:#5c1015;
+    --text-hi:#f3e6e6;
+    --text-mid:#b98686;
+    --text-low:#6e4444;
+    --glow: 0 0 12px rgba(255,26,43,.55);
+  }
+
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    background:var(--bg-void);
+    color:var(--text-hi);
+    font-family:'Share Tech Mono', monospace;
+    overflow-x:hidden;
+    min-height:100vh;
+  }
+
+
+  #matrix{
+    position:fixed; inset:0; z-index:0; opacity:.35;
+  }
+  .grid-overlay{
+    position:fixed; inset:0; z-index:1; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(255,26,43,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,26,43,.05) 1px, transparent 1px);
+    background-size: 42px 42px;
+    mask-image: radial-gradient(ellipse at 50% 0%, black 40%, transparent 85%);
+  }
+  .scanlines{
+    position:fixed; inset:0; z-index:5; pointer-events:none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(255,0,0,.025) 3px,
+      rgba(0,0,0,0) 4px
+    );
+  }
+  .vignette{
+    position:fixed; inset:0; z-index:4; pointer-events:none;
+    box-shadow: inset 0 0 220px rgba(0,0,0,.85);
+  }
+
+
+  .shell{
+    position:relative; z-index:10;
+    display:grid;
+    grid-template-columns: 230px 1fr;
+    min-height:100vh;
+  }
+
+
+  .sidebar{
+    border-right:1px solid var(--line);
+    background:linear-gradient(180deg, var(--bg-panel), var(--bg-void));
+    padding:26px 18px;
+    display:flex; flex-direction:column;
+    gap:34px;
+  }
+  .brand{
+    display:flex; flex-direction:row; align-items:center; gap:10px;
+    padding-bottom:18px;
+    border-bottom:1px solid var(--line);
+  }
+  .brand .mascot{
+    width:34px; height:34px; flex-shrink:0;
+    filter: drop-shadow(0 0 6px rgba(255,26,43,.55));
+  }
+  .brand .brand-text{
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .brand .mark{
+    font-family:'Orbitron', sans-serif;
+    font-weight:900;
+    font-size:1.05rem;
+    letter-spacing:1px;
+    color:var(--red-core);
+    text-shadow: var(--glow);
+    position:relative;
+  }
+  .brand .mark::before{
+    content:'INFINITYxWARE';
+    position:absolute; left:0; top:0;
+    color:var(--red-deep);
+    clip-path: inset(0 0 0 0);
+    animation: brandGlitch 6.5s infinite steps(1);
+    opacity:.7;
+  }
+  @keyframes brandGlitch{
+    0%,92%,100%{ clip-path: inset(0 0 0 0); transform:translate(0,0); opacity:0; }
+    93%{ clip-path: inset(10% 0 60% 0); transform:translate(-2px,0); opacity:.8; }
+    94%{ clip-path: inset(60% 0 5% 0); transform:translate(2px,0); opacity:.8; }
+    95%{ clip-path: inset(30% 0 40% 0); transform:translate(-1px,0); opacity:.6; }
+    96%{ opacity:0; }
+  }
+  .brand .tag{
+    font-size:.68rem; letter-spacing:2px; color:var(--text-low);
+  }
+
+  nav{ display:flex; flex-direction:column; gap:4px; }
+  .nav-btn{
+    all:unset;
+    cursor:pointer;
+    padding:11px 12px;
+    font-family:'Share Tech Mono', monospace;
+    font-size:.86rem;
+    color:var(--text-mid);
+    border-left:2px solid transparent;
+    display:flex; align-items:center; gap:10px;
+    transition: color .18s ease, border-color .18s ease, background .18s ease;
+  }
+  .nav-btn .dot{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--text-low);
+    transition: background .18s ease, box-shadow .18s ease;
+  }
+  .nav-btn:hover{
+    color:var(--text-hi);
+    background:rgba(255,26,43,.05);
+    border-left-color:var(--red-dim);
+  }
+  .nav-btn.active{
+    color:var(--red-core);
+    border-left-color:var(--red-core);
+    background:rgba(255,26,43,.08);
+  }
+  .nav-btn.active .dot{
+    background:var(--red-core);
+    box-shadow:0 0 8px var(--red-core);
+  }
+
+  .sidebar-footer{
+    margin-top:auto;
+    font-size:.66rem;
+    color:var(--text-low);
+    line-height:1.7;
+    border-top:1px solid var(--line);
+    padding-top:14px;
+  }
+  .sidebar-footer .status-row{
+    display:flex; justify-content:space-between; gap:8px;
+  }
+  .pulse{
+    width:6px;height:6px;border-radius:50%;
+    background:var(--red-core);
+    display:inline-block;
+    margin-right:6px;
+    animation:pulse 1.6s infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ box-shadow:0 0 0 0 rgba(255,26,43,.6); }
+    50%{ box-shadow:0 0 0 5px rgba(255,26,43,0); }
+  }
+
+
+  main{ padding:34px 42px; position:relative; }
+
+  .view{ display:none; animation: fadeUp .5s ease both; }
+  .view.active{ display:block; }
+  @keyframes fadeUp{
+    from{ opacity:0; transform:translateY(10px); }
+    to{ opacity:1; transform:translateY(0); }
+  }
+
+  header.hero{
+    display:flex; justify-content:space-between; align-items:flex-end;
+    padding-bottom:22px; margin-bottom:28px;
+    border-bottom:1px solid var(--line);
+  }
+  .hero h1{
+    font-family:'Orbitron', sans-serif;
+    font-weight:700;
+    font-size:1.9rem;
+    margin:0;
+    letter-spacing:.5px;
+    color:var(--text-hi);
+  }
+  .hero h1 span{ color:var(--red-core); text-shadow:var(--glow); }
+  .hero p.sub{ color:var(--text-low); margin:6px 0 0; font-size:.82rem; }
+  .clock{ text-align:right; color:var(--text-mid); font-size:.8rem; }
+  .clock .time{ font-size:1.3rem; color:var(--red-core); text-shadow:var(--glow); }
+
+
+  .stats{
+    display:grid; grid-template-columns:repeat(4,1fr); gap:16px;
+    margin-bottom:30px;
+  }
+  .stat{
+    border:1px solid var(--line);
+    background:var(--bg-panel);
+    padding:16px 18px;
+    position:relative;
+    overflow:hidden;
+  }
+  .stat::after{
+    content:''; position:absolute; left:0; bottom:0; height:2px; width:100%;
+    background:linear-gradient(90deg, transparent, var(--red-core), transparent);
+    opacity:.5;
+  }
+  .stat .label{ font-size:.68rem; color:var(--text-low); letter-spacing:1px; }
+  .stat .value{ font-family:'Orbitron',sans-serif; font-size:1.5rem; color:var(--text-hi); margin-top:6px; }
+  .stat .value.red{ color:var(--red-core); text-shadow:var(--glow); }
+
+
+  .console{
+    border:1px solid var(--line);
+    background: #070303;
+    padding:18px 20px;
+    min-height:220px;
+    font-size:.86rem;
+    line-height:1.75;
+    color:var(--text-mid);
+    position:relative;
+  }
+  .console .line{ opacity:0; animation: typeIn .4s forwards; }
+  .console .line b{ color:var(--red-core); }
+  @keyframes typeIn{ to{ opacity:1; } }
+  .cursor{
+    display:inline-block; width:8px; height:14px; background:var(--red-core);
+    vertical-align:middle; margin-left:4px;
+    animation: blink 1s steps(1) infinite;
+    box-shadow:var(--glow);
+  }
+  @keyframes blink{ 50%{ opacity:0; } }
+
+
+  .options-grid{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:18px;
+  }
+  .option-slot{
+    border:1px dashed var(--line);
+    background:var(--bg-panel);
+    min-height:130px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:8px;
+    color:var(--text-low);
+    font-size:.78rem;
+    letter-spacing:.5px;
+    text-align:center;
+    padding:14px;
+    transition: border-color .2s ease, color .2s ease, background .2s ease;
+    cursor:default;
+  }
+  .option-slot:hover{
+    border-color:var(--red-dim);
+    color:var(--text-mid);
+    background:rgba(255,26,43,.04);
+  }
+  .option-slot .plus{
+    font-family:'Orbitron',sans-serif;
+    font-size:1.4rem;
+    color:var(--red-deep);
+  }
+  .options-note{
+    margin-top:22px;
+    font-size:.78rem;
+    color:var(--text-low);
+    border-left:2px solid var(--red-dim);
+    padding-left:12px;
+  }
+
+  footer.credit{
+    margin-top:40px;
+    padding-top:16px;
+    border-top:1px solid var(--line);
+    font-size:.72rem;
+    color:var(--text-low);
+    display:flex; justify-content:space-between;
+  }
+  footer.credit b{ color:var(--red-core); }
+
+  @media (max-width:760px){
+    .shell{ grid-template-columns:1fr; }
+    .sidebar{ flex-direction:row; overflow-x:auto; align-items:center; }
+    .brand{ display:none; }
+    nav{ flex-direction:row; }
+    .sidebar-footer{ display:none; }
+    main{ padding:22px; }
+    .stats{ grid-template-columns:repeat(2,1fr); }
+    .options-grid{ grid-template-columns:1fr; }
+    header.hero{ flex-direction:column; align-items:flex-start; gap:10px; }
+  }
+
+  @media (prefers-reduced-motion: reduce){
+    *{ animation:none !important; transition:none !important; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div class="grid-overlay"></div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<div class="shell">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <img class="mascot" src="/assets/icon.png" alt="InfinityxWare">
+      <div class="brand-text">
+        <div class="mark">INFINITYxWARE</div>
+        <div class="tag">CONTROL PANEL</div>
+      </div>
+    </div>
+
+    <nav>
+      <button class="nav-btn active" data-view="dashboard"><span class="dot"></span> Painel</button>
+      <button class="nav-btn" data-view="options"><span class="dot"></span> Opções</button>
+      <button class="nav-btn" data-view="about"><span class="dot"></span> Sobre</button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-row"><span><span class="pulse"></span>sistema</span><span>online</span></div>
+      <div class="status-row"><span>build</span><span>0.1.0</span></div>
+    </div>
+  </aside>
+
+  <main>
+
+
+    <section class="view active" id="view-dashboard">
+      <header class="hero">
+        <div>
+          <h1>INFINITY<span>xWARE</span></h1>
+          <p class="sub">painel de controle // acesso local</p>
+        </div>
+        <div class="clock">
+          <div class="time" id="clock">00:00:00</div>
+          <div id="dateNow">--/--/----</div>
+        </div>
+      </header>
+
+      <div class="stats">
+        <div class="stat"><div class="label">STATUS</div><div class="value red">ATIVO</div></div>
+        <div class="stat"><div class="label">MÓDULOS</div><div class="value">0 / 0</div></div>
+        <div class="stat"><div class="label">SESSÃO</div><div class="value" id="sessionTime">00:00</div></div>
+        <div class="stat"><div class="label">VERSÃO</div><div class="value">v0.1</div></div>
+      </div>
+
+      <div class="console" id="console"></div>
+    </section>
+
+    
+    <section class="view" id="view-options">
+      <header class="hero">
+        <div>
+          <h1>OP<span>ÇÕES</span></h1>
+          <p class="sub">funcionalidades do painel</p>
+        </div>
+      </header>
+
+      <div class="options-grid">
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+        <div class="option-slot"><div class="plus">+</div>slot livre</div>
+      </div>
+
+      <p class="options-note">nenhuma funcionalidade instalada ainda — os slots acima estão prontos para receber os módulos que você adicionar depois.</p>
+    </section>
+
+    
+    <section class="view" id="view-about">
+      <header class="hero">
+        <div>
+          <h1>SO<span>BRE</span></h1>
+          <p class="sub">informações do painel</p>
+        </div>
+      </header>
+
+      <div class="console">
+        <div class="line" style="animation-delay:.1s">&gt; painel <b>INFINITYxWARE</b></div>
+        <div class="line" style="animation-delay:.3s">&gt; desenvolvido por <b>infinity</b></div>
+        <div class="line" style="animation-delay:.5s">&gt; base pronta para expansão de módulos<span class="cursor"></span></div>
+      </div>
+    </section>
+
+    <footer class="credit">
+      <span>InfinityxWare © 2026</span>
+      <span>feito por <b>infinity</b></span>
+    </footer>
+
+  </main>
+</div>
+
+<script>
+
+  const navBtns = document.querySelectorAll('.nav-btn');
+  const views = document.querySelectorAll('.view');
+  navBtns.forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      navBtns.forEach(b=>b.classList.remove('active'));
+      views.forEach(v=>v.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('view-'+btn.dataset.view).classList.add('active');
+    });
+  });
+
+  
+  function pad(n){ return n.toString().padStart(2,'0'); }
+  function tickClock(){
+    const d = new Date();
+    document.getElementById('clock').textContent =
+      pad(d.getHours())+':'+pad(d.getMinutes())+':'+pad(d.getSeconds());
+    document.getElementById('dateNow').textContent =
+      pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear();
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+
+  let sessionSeconds = 0;
+  setInterval(()=>{
+    sessionSeconds++;
+    const m = Math.floor(sessionSeconds/60);
+    const s = sessionSeconds%60;
+    document.getElementById('sessionTime').textContent = pad(m)+':'+pad(s);
+  }, 1000);
+
+  
+  const bootLines = [
+    '&gt; iniciando <b>InfinityxWare</b>...',
+    '&gt; carregando núcleo do painel [OK]',
+    '&gt; verificando módulos... nenhum módulo instalado',
+    '&gt; aguardando comandos do operador<span class="cursor"></span>'
+  ];
+  const consoleEl = document.getElementById('console');
+  bootLines.forEach((text, i)=>{
+    const div = document.createElement('div');
+    div.className = 'line';
+    div.style.animationDelay = (i*0.35)+'s';
+    div.innerHTML = text;
+    consoleEl.appendChild(div);
+  });
+
+
+  const canvas = document.getElementById('matrix');
+  const ctx = canvas.getContext('2d');
+  let w, h, cols, drops;
+  const chars = '01ANGO#$%INFINITYWARE01アイウエオ';
+
+  function resize(){
+    w = canvas.width = window.innerWidth;
+    h = canvas.height = window.innerHeight;
+    cols = Math.floor(w/16);
+    drops = new Array(cols).fill(0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  function draw(){
+    ctx.fillStyle = 'rgba(5,2,2,0.12)';
+    ctx.fillRect(0,0,w,h);
+    ctx.font = '14px monospace';
+    for(let i=0;i<drops.length;i++){
+      const char = chars[Math.floor(Math.random()*chars.length)];
+      const x = i*16;
+      const y = drops[i]*16;
+      const grad = Math.random();
+      ctx.fillStyle = grad > .96 ? '#ffdada' : (grad > .8 ? '#ff1a2b' : 'rgba(140,15,20,0.7)');
+      ctx.fillText(char, x, y);
+      if(y > h && Math.random() > 0.975){ drops[i] = 0; }
+      drops[i]++;
+    }
+  }
+  setInterval(draw, 55);
+</script>
+
+</body>
+</html>
